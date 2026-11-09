@@ -1,7 +1,5 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useMemo,
   useState,
   type ReactNode,
@@ -9,9 +7,10 @@ import {
 import type {
   AuthProfileResponse,
   AuthSessionResponse,
-  CompanyMembershipProfile,
 } from '@pulso/contracts';
+import type { ApiRequestOptions } from '../services/api';
 import { apiRequest, apiRequestVoid, ApiError } from '../services/api';
+import { AuthContext, type AuthContextValue } from './AuthContext';
 
 interface LoginCredentials {
   email: string;
@@ -22,25 +21,6 @@ interface RegistrationDetails extends LoginCredentials {
   name: string;
   companyName: string;
 }
-
-interface AuthContextValue {
-  session: AuthSessionResponse | null;
-  activeCompanyId: string | null;
-  memberships: CompanyMembershipProfile[];
-  isAuthenticated: boolean;
-  login(input: LoginCredentials): Promise<void>;
-  register(input: RegistrationDetails): Promise<void>;
-  refreshProfile(): Promise<void>;
-  logout(): void;
-  selectCompany(companyId: string): void;
-  request<T>(path: string, options?: Omit<Parameters<typeof apiRequest<T>>[1], 'token'>): Promise<T>;
-  requestVoid(
-    path: string,
-    options?: Omit<Parameters<typeof apiRequestVoid>[1], 'token'>,
-  ): Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextValue | null>(null);
 
 function firstCompanyId(session: AuthSessionResponse): string | null {
   return session.memberships[0]?.companyId ?? null;
@@ -113,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const request = useCallback(
     async <T,>(
       path: string,
-      options: Omit<Parameters<typeof apiRequest<T>>[1], 'token'> = {},
+      options: Omit<ApiRequestOptions, 'token'> = {},
     ) => {
       if (!session) throw new ApiError('Sua sessão não está ativa.', 401);
       try {
@@ -132,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const requestVoid = useCallback(
     async (
       path: string,
-      options: Omit<Parameters<typeof apiRequestVoid>[1], 'token'> = {},
+      options: Omit<ApiRequestOptions, 'token'> = {},
     ) => {
       if (!session) throw new ApiError('Sua sessão não está ativa.', 401);
       try {
@@ -173,16 +153,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth(): AuthContextValue {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth deve ser usado dentro de AuthProvider.');
-  return context;
-}
-
-export function profileFromSession(
-  session: AuthSessionResponse,
-): AuthProfileResponse {
-  return { user: session.user, memberships: session.memberships };
 }

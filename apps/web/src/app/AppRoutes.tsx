@@ -1,7 +1,8 @@
-import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
+import { Link, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import type { ReactNode } from 'react';
-import { useAuth } from './AuthContext';
+import { useAuth } from './useAuth';
 import { LoginPage, RegisterPage } from '../features/auth/AuthPages';
+import { destinationFromState } from './routeState';
 import { DashboardPage } from '../features/dashboard/DashboardPage';
 import {
   CategoriesPage,
@@ -37,7 +38,10 @@ function RedirectAuthenticated() {
 
 function PublicOnly({ children }: { children: ReactNode }) {
   const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <Navigate replace to="/app/overview" /> : children;
+  const location = useLocation();
+  return isAuthenticated
+    ? <Navigate replace to={destinationFromState(location.state)} />
+    : children;
 }
 
 function NotFoundPage() {
@@ -48,7 +52,7 @@ function NotFoundPage() {
         icon="search"
         title="Não encontramos esse caminho"
       />
-      <a className="button button--secondary" href="/app/overview">Voltar para o início</a>
+      <Link className="button button--secondary" to="/app/overview">Voltar para o início</Link>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../app/AuthContext';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../app/useAuth';
+import { destinationFromState } from '../../app/routeState';
 import { ApiError } from '../../services/api';
 import { Button, FormField, InlineNotice } from '../../components/ui';
 import { Icon } from '../../components/Icon';
@@ -14,6 +15,7 @@ function errorText(error: unknown): string {
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -25,7 +27,7 @@ export function LoginPage() {
     setBusy(true);
     try {
       await login({ email, password });
-      navigate('/app/overview', { replace: true });
+      navigate(destinationFromState(location.state), { replace: true });
     } catch (requestError) {
       setError(errorText(requestError));
     } finally {

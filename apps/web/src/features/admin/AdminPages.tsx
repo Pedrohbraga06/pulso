@@ -8,7 +8,7 @@ import type {
   CompanyRole,
   CreatedCompanyInvitation,
 } from '@pulso/contracts';
-import { useAuth } from '../../app/AuthContext';
+import { useAuth } from '../../app/useAuth';
 import { Icon } from '../../components/Icon';
 import {
   Badge,
@@ -28,6 +28,11 @@ function messageFrom(error: unknown): string {
   return 'Não foi possível concluir a solicitação. Tente novamente.';
 }
 
+function parseRole(value: string): CompanyRole | null {
+  if (value === 'OWNER' || value === 'ADMIN' || value === 'MEMBER') return value;
+  return null;
+}
+
 function useCompanyPath(suffix: string): string | null {
   const { activeCompanyId } = useAuth();
   return activeCompanyId
@@ -44,8 +49,6 @@ export function ProfilePage() {
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
-    setError('');
     request<AuthProfileResponse>('/auth/me')
       .then((result) => { if (active) setProfile(result); })
       .catch((requestError: unknown) => { if (active) setError(messageFrom(requestError)); })
@@ -55,7 +58,7 @@ export function ProfilePage() {
 
   return (
     <>
-      <PageHeader description="Informações fornecidas pela sessão autenticada." eyebrow="ADMINISTRAÇÃO" title="Meu perfil" action={<Button icon="refresh" onClick={() => setReloadKey((value) => value + 1)} type="button" variant="secondary">Atualizar</Button>} />
+      <PageHeader description="Informações fornecidas pela sessão autenticada." eyebrow="ADMINISTRAÇÃO" title="Meu perfil" action={<Button icon="refresh" onClick={() => { setError(''); setLoading(true); setReloadKey((value) => value + 1); }} type="button" variant="secondary">Atualizar</Button>} />
       {loading ? <LoadingState label="Carregando perfil da API…" /> : error ? <InlineNotice tone="danger">{error}</InlineNotice> : profile && (
         <div className="admin-grid">
           <Panel className="profile-card" title="Dados da conta" subtitle="Leitura real da API /auth/me">
@@ -112,48 +115,76 @@ export function UsersPage() {
   const invitationsPath = useCompanyPath('/invitations');
   const activeRole = session?.memberships.find((item) => item.companyId === activeCompanyId)?.role;
   const canManage = activeRole === 'OWNER' || activeRole === 'ADMIN';
-  const [members, setMembers] = useState<CompanyMemberDetails[]>([]);
-  const [invitations, setInvitations] = useState<CompanyInvitationSummary[]>([]);
+  const [companyData, setCompanyData] = useState<{
+    companyId: string;
+    members: CompanyMemberDetails[];
+    invitations: CompanyInvitationSummary[];
+  } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [loadError, setLoadError] = useState<{ companyId: string; message: string } | null>(null);
   const [formError, setFormError] = useState('');
   const [email, setEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<CompanyRole>('MEMBER');
-  const [createdInvitation, setCreatedInvitation] = useState<CreatedCompanyInvitation | null>(null);
+  const [createdInvitation, setCreatedInvitation] = useState<{
+    companyId: string;
+    invitation: CreatedCompanyInvitation;
+  } | null>(null);
   const [copied, setCopied] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [loadedCompanyId, setLoadedCompanyId] = useState<string | null>(null);
+  const [attemptedCompanyId, setAttemptedCompanyId] = useState<string | null>(null);
+  const members = companyData?.companyId === activeCompanyId ? companyData.members : [];
+  const invitations = companyData?.companyId === activeCompanyId ? companyData.invitations : [];
+  const error = loadError?.companyId === activeCompanyId ? loadError.message : '';
 
   useEffect(() => {
     let active = true;
-    if (!membersPath) {
-      setLoading(false);
-      setMembers([]);
-      setInvitations([]);
-      return () => { active = false; };
-    }
-    setLoading(true);
-    setError('');
+    if (!membersPath || !activeCompanyId) return () => { active = false; };
+    const companyId = activeCompanyId;
     const load = async () => {
       const memberRows = await request<CompanyMemberDetails[]>(membersPath);
       const inviteRows = canManage && invitationsPath
         ? await request<CompanyInvitationSummary[]>(invitationsPath)
         : [];
-      if (active) {
-        setMembers(memberRows);
-        setInvitations(inviteRows);
-      }
+      return { memberRows, inviteRows };
     };
     load()
-      .catch((requestError: unknown) => { if (active) setError(messageFrom(requestError)); })
-      .finally(() => { if (active) setLoading(false); });
+      .then(({ memberRows, inviteRows }) => {
+        if (active) {
+          setCompanyData({ companyId, members: memberRows, invitations: inviteRows });
+          setLoadedCompanyId(companyId);
+          setLoadError(null);
+          setAttemptedCompanyId(companyId);
+        }
+      })
+      .catch((requestError: unknown) => {
+        if (active) {
+          setLoadError({ companyId, message: messageFrom(requestError) });
+          setAttemptedCompanyId(companyId);
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
     return () => { active = false; };
-  }, [canManage, invitationsPath, membersPath, reloadKey, request]);
+  }, [activeCompanyId, canManage, invitationsPath, membersPath, reloadKey, request]);
 
-  const reload = useCallback(() => setReloadKey((value) => value + 1), []);
+  const reload = useCallback(() => {
+    if (!membersPath) return;
+    setLoadError(null);
+    setAttemptedCompanyId(null);
+    setLoading(true);
+    setReloadKey((value) => value + 1);
+  }, [membersPath]);
+  const isLoading = loading || (
+    activeCompanyId !== null
+    && loadedCompanyId !== activeCompanyId
+    && attemptedCompanyId !== activeCompanyId
+  );
 
   async function createInvitation(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!invitationsPath) return;
+    if (!invitationsPath || !activeCompanyId) return;
     setFormError('');
     setCreatedInvitation(null);
     try {
@@ -161,7 +192,8 @@ export function UsersPage() {
         method: 'POST',
         body: { email: email.trim(), role: inviteRole },
       });
-      setCreatedInvitation(created);
+      setCreatedInvitation({ companyId: activeCompanyId, invitation: created });
+      setCopied(false);
       setEmail('');
       reload();
     } catch (requestError) {
@@ -208,7 +240,7 @@ export function UsersPage() {
   async function copyInvitationToken() {
     if (!createdInvitation) return;
     try {
-      await navigator.clipboard.writeText(createdInvitation.token);
+      await navigator.clipboard.writeText(createdInvitation.invitation.token);
       setCopied(true);
     } catch {
       setFormError('Não foi possível copiar automaticamente. Selecione e copie o token exibido.');
@@ -218,11 +250,11 @@ export function UsersPage() {
   return (
     <>
       <PageHeader description="Gerencie vínculos e convites usando a API de memberships existente." eyebrow="ADMINISTRAÇÃO" title="Usuários e permissões" action={<Button icon="refresh" onClick={reload} type="button" variant="secondary">Atualizar</Button>} />
-      {!activeCompanyId && <InlineNotice tone="warning">Selecione uma empresa vinculada para consultar usuários.</InlineNotice>}
-      {activeCompanyId && !canManage && <InlineNotice>Você pode consultar os membros desta empresa. A API exige OWNER ou ADMIN para convidar, alterar papéis ou remover vínculos.</InlineNotice>}
+      {!activeCompanyId ? <InlineNotice tone="warning">Selecione uma empresa vinculada para consultar usuários.</InlineNotice> : <>
+      {!canManage && <InlineNotice>Você pode consultar os membros desta empresa. A API exige OWNER ou ADMIN para convidar, alterar papéis ou remover vínculos.</InlineNotice>}
       {error && <InlineNotice tone="danger">{error}</InlineNotice>}
       {formError && <InlineNotice tone="danger">{formError}</InlineNotice>}
-      {loading ? <LoadingState label="Carregando usuários da API…" /> : (
+      {isLoading ? <LoadingState label="Carregando usuários da API…" /> : (
         <>
           <Panel className="catalog-panel" title="Membros" subtitle={`${members.length} vínculo(s) retornado(s) pela API`}>
             {members.length === 0 ? <EmptyState description="A lista usa GET /companies/:companyId/members." icon="users" title="Nenhum membro encontrado" /> : (
@@ -230,7 +262,7 @@ export function UsersPage() {
                 {members.map((member) => {
                   const isSelf = member.userId === session?.user.id;
                   const canEdit = canManage && !(activeRole === 'ADMIN' && member.role === 'OWNER');
-                  return <tr key={member.id}><td><span className="member-cell"><span className="avatar">{initials(member.name)}</span><span><strong className="table-primary">{member.name}</strong><small className="table-secondary">{member.email}{isSelf ? ' · Você' : ''}</small></span></span></td><td>{canEdit ? <label className="sr-only" htmlFor={`role-${member.id}`}>Papel de {member.name}</label> : null}{canEdit ? <select className="role-select" id={`role-${member.id}`} onChange={(event) => void changeRole(member, event.target.value as CompanyRole)} value={member.role}><option value="OWNER">OWNER</option><option value="ADMIN">ADMIN</option><option value="MEMBER">MEMBER</option></select> : <Badge tone={member.role === 'OWNER' ? 'info' : 'neutral'}>{member.role}</Badge>}</td><td>{new Date(member.createdAt).toLocaleDateString('pt-BR')}</td>{canManage && <td><button className="text-button text-button--danger" disabled={!canEdit} onClick={() => void removeMember(member)} type="button">Remover</button></td>}</tr>;
+                  return <tr key={member.id}><td><span className="member-cell"><span className="avatar">{initials(member.name)}</span><span><strong className="table-primary">{member.name}</strong><small className="table-secondary">{member.email}{isSelf ? ' · Você' : ''}</small></span></span></td><td>{canEdit ? <label className="sr-only" htmlFor={`role-${member.id}`}>Papel de {member.name}</label> : null}{canEdit ? <select className="role-select" id={`role-${member.id}`} onChange={(event) => { const role = parseRole(event.target.value); if (role) void changeRole(member, role); }} value={member.role}><option value="OWNER">OWNER</option><option value="ADMIN">ADMIN</option><option value="MEMBER">MEMBER</option></select> : <Badge tone={member.role === 'OWNER' ? 'info' : 'neutral'}>{member.role}</Badge>}</td><td>{new Date(member.createdAt).toLocaleDateString('pt-BR')}</td>{canManage && <td><button className="text-button text-button--danger" disabled={!canEdit} onClick={() => void removeMember(member)} type="button">Remover</button></td>}</tr>;
                 })}
               </tbody></table></div>
             )}
@@ -241,10 +273,10 @@ export function UsersPage() {
               <Panel title="Convidar pessoa" subtitle="A API cria um token; não envia e-mail">
                 <form className="invite-form" onSubmit={(event) => void createInvitation(event)}>
                   <FormField autoComplete="email" id="invite-email" label="E-mail" onChange={(event) => setEmail(event.target.value)} placeholder="pessoa@empresa.com" required type="email" value={email} />
-                  <label className="form-field" htmlFor="invite-role"><span className="form-field__label">Papel do convite</span><select id="invite-role" onChange={(event) => setInviteRole(event.target.value as CompanyRole)} value={inviteRole}><option value="MEMBER">MEMBER</option><option value="ADMIN">ADMIN</option>{activeRole === 'OWNER' && <option value="OWNER">OWNER</option>}</select></label>
+                  <label className="form-field" htmlFor="invite-role"><span className="form-field__label">Papel do convite</span><select id="invite-role" onChange={(event) => { const role = parseRole(event.target.value); if (role) setInviteRole(role); }} value={inviteRole}><option value="MEMBER">MEMBER</option><option value="ADMIN">ADMIN</option>{activeRole === 'OWNER' && <option value="OWNER">OWNER</option>}</select></label>
                   <Button icon="plus" type="submit">Criar convite</Button>
                 </form>
-                {createdInvitation && <div className="invitation-token"><InlineNotice tone="warning">Token exibido uma única vez. Compartilhe com segurança; ele não será mostrado novamente.</InlineNotice><code>{createdInvitation.token}</code><Button icon="copy" onClick={() => void copyInvitationToken()} type="button" variant="secondary">{copied ? 'Copiado' : 'Copiar token'}</Button><small>Convite válido até {new Date(createdInvitation.expiresAt).toLocaleDateString('pt-BR')}.</small></div>}
+                {createdInvitation?.companyId === activeCompanyId && <div className="invitation-token"><InlineNotice tone="warning">Token exibido uma única vez. Compartilhe com segurança; ele não será mostrado novamente.</InlineNotice><code>{createdInvitation.invitation.token}</code><Button icon="copy" onClick={() => void copyInvitationToken()} type="button" variant="secondary">{copied ? 'Copiado' : 'Copiar token'}</Button><small>Convite válido até {new Date(createdInvitation.invitation.expiresAt).toLocaleDateString('pt-BR')}.</small></div>}
               </Panel>
               <Panel title="Convites" subtitle="Lista retornada pela API; o token não é recuperável">
                 {invitations.length === 0 ? <EmptyState description="Convites criados aparecem aqui enquanto ativos ou concluídos." icon="mail" title="Nenhum convite" /> : <div className="invitation-list">{invitations.map((invitation) => <div className="invitation-row" key={invitation.id}><span className="invitation-row__icon"><Icon name="mail" size={17} /></span><span className="invitation-row__copy"><strong>{invitation.email ?? 'Convite sem e-mail específico'}</strong><small>{invitation.role} · expira {new Date(invitation.expiresAt).toLocaleDateString('pt-BR')}</small></span><Badge tone={invitation.acceptedAt ? 'success' : invitation.revokedAt ? 'danger' : 'warning'}>{invitation.acceptedAt ? 'Aceito' : invitation.revokedAt ? 'Revogado' : 'Pendente'}</Badge>{!invitation.acceptedAt && !invitation.revokedAt && <button className="text-button text-button--danger" onClick={() => void revokeInvitation(invitation)} type="button">Revogar</button>}</div>)}</div>}
@@ -253,6 +285,7 @@ export function UsersPage() {
           )}
         </>
       )}
+      </>}
       <AcceptInvitationCard />
     </>
   );
@@ -277,7 +310,11 @@ function AcceptInvitationCard() {
       });
       setAccepted(result);
       setToken('');
-      await refreshProfile();
+      try {
+        await refreshProfile();
+      } catch {
+        setError('Convite aceito, mas não foi possível atualizar a lista de empresas. Atualize o perfil.');
+      }
     } catch (requestError) {
       setError(messageFrom(requestError));
     } finally {

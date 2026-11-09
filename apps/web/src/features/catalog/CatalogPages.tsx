@@ -71,13 +71,30 @@ export function ProductsPage() {
 
 export function CategoriesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<'Todas' | 'Produtos' | 'Ingredientes'>('Todas');
+  const categories = demoCategories.filter(
+    (category) => categoryFilter === 'Todas' || category.type === categoryFilter,
+  );
   return (
     <>
       <DemoBanner />
       <PageHeader description="Agrupe o catálogo em categorias fáceis de reconhecer." eyebrow="CATÁLOGO" title="Categorias" action={<Button icon="plus" onClick={() => setDialogOpen(true)} type="button">Nova categoria</Button>} />
-      <div className="category-tabs"><button className="category-tab category-tab--active" type="button">Todas <span>5</span></button><button className="category-tab" type="button">Produtos <span>3</span></button><button className="category-tab" type="button">Ingredientes <span>2</span></button></div>
+      <div aria-label="Filtrar categorias" className="category-tabs" role="group">
+        {(['Todas', 'Produtos', 'Ingredientes'] as const).map((filter) => (
+          <button
+            aria-pressed={categoryFilter === filter}
+            className={`category-tab${categoryFilter === filter ? ' category-tab--active' : ''}`}
+            key={filter}
+            onClick={() => setCategoryFilter(filter)}
+            type="button"
+          >
+            {filter}
+            <span>{filter === 'Todas' ? demoCategories.length : demoCategories.filter((category) => category.type === filter).length}</span>
+          </button>
+        ))}
+      </div>
       <section className="category-grid">
-        {demoCategories.map((category) => (
+        {categories.map((category) => (
           <article className="category-card" key={category.name}>
             <div className={`category-card__icon category-card__icon--${category.tone}`}><Icon name={category.type === 'Produtos' ? 'tag' : 'leaf'} size={19} /></div>
             <div className="category-card__top"><Badge tone={category.type === 'Produtos' ? 'info' : 'success'}>{category.type}</Badge><button className="icon-button" aria-label={`Mais opções demonstrativas para ${category.name}`} type="button"><Icon name="chevron" size={16} /></button></div>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
-import { useAuth } from '../app/AuthContext';
+import { useAuth } from '../app/useAuth';
 import { Icon, type IconName } from '../components/Icon';
 import { Brand } from '../components/ui';
 
@@ -119,7 +119,7 @@ export function AppShell() {
             </label>
             <div className="notification-wrap">
               <button className="icon-button notification-button" aria-label="Notificações" aria-expanded={notificationsOpen} onClick={() => setNotificationsOpen((value) => !value)} type="button">
-                <Icon name="bell" size={19} /><span className="notification-button__dot" />
+                <Icon name="bell" size={19} />
               </button>
               {notificationsOpen && (
                 <div className="notification-popover" role="status">
