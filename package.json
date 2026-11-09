@@ -17,6 +17,7 @@
     "lint": "pnpm -r --if-present lint",
     "test": "pnpm -r --if-present test",
     "test:e2e": "pnpm --filter api test:e2e",
+    "test:governance": "node --test scripts/governance/config.test.mjs",
     "typecheck": "pnpm -r --if-present typecheck",
     "check": "pnpm lint && pnpm typecheck"
   }

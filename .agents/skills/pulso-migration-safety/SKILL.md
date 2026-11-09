@@ -20,9 +20,11 @@ commands that alter database state.
 4. Never run destructive or data-loss commands, including `prisma migrate reset`,
    `prisma db push --accept-data-loss`, destructive SQL, or volume removal,
    without explicit human approval.
-5. The workspace approval hook forces a prompt for Prisma migration/write
-   commands and edits below Prisma `migrations/`. Do not bypass, disable, or
-   reinterpret that prompt as blanket approval for unrelated destructive steps.
+
+
+5. The workspace approval hook forces a prompt for every `run_command` and
+   direct edits to Prisma schema/migration files. Do not bypass, disable, or
+   reinterpret one prompt as blanket approval for another operation/environment.
 6. Do not apply a migration to production. Production changes require explicit
    human authorization and the approved deployment process.
 7. Validate with the smallest safe checks available, such as schema validation,

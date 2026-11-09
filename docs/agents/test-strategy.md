@@ -41,3 +41,14 @@ selection. A frontend-only test is not evidence of backend isolation.
 Add focused tests for behavior introduced or fixed. Prefer a small number of
 tests that would have failed before the change and cover meaningful edge cases;
 avoid tests that merely restate implementation details.
+
+## Governance configuration
+
+Run `pnpm test:governance` after changing role profiles, workspace rules or the
+approval hook. These checks validate repository structure, metadata and selected
+hook decisions; they do not prove that a particular Antigravity App or CLI
+version parsed or loaded a profile or displayed an approval prompt. Verify
+discovery and enforcement in the authenticated target surface, record its
+version, and state any account/platform blocker. Never use an authentication
+code or token pasted into a chat as a substitute for signing in directly in the
+target CLI.

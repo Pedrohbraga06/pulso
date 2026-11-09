@@ -53,12 +53,35 @@ A API estará disponível em:
 
 O cadastro exige `name`, `email`, `password` (mínimo de 12 caracteres) e `companyName`.
 
+### Identidade e autenticação
+
+- `POST /auth/register` cria o usuário e a primeira empresa atomicamente; o usuário recebe a associação `OWNER`.
+- `POST /auth/login` autentica por e-mail e senha.
+- `GET /auth/me` exige `Authorization: Bearer <access-token>` e retorna apenas o perfil autenticado e suas associações.
+- Senhas são armazenadas com Argon2id; access tokens JWT expiram em 15 minutos.
+- O JWT contém a identidade do usuário, não um `tenantId` escolhido pelo cliente. Campos não permitidos no cadastro são rejeitados.
+
+### Identidade e autenticação
+
+- `POST /auth/register` cria o usuário e a primeira empresa atomicamente; o usuário recebe a associação `OWNER`.
+- `POST /auth/login` autentica por e-mail e senha.
+- `GET /auth/me` exige `Authorization: Bearer <access-token>` e retorna apenas o perfil autenticado e suas associações.
+- Senhas são armazenadas com Argon2id; access tokens JWT expiram em 15 minutos.
+- O JWT contém a identidade do usuário, não um `tenantId` escolhido pelo cliente. Campos não permitidos no cadastro são rejeitados.
+
+O cadastro exige `name`, `email`, `password` (mínimo de 12 caracteres) e `companyName`.
+
+### Empresas, 
+O cadastro exige `name`, `email`, `password` (mínimo de 12 caracteres) e `companyName`.
+
+### Empresas, 
 ### Empresas, Memberships e convites
 
 - `GET /companies` lista as empresas associadas ao usuário autenticado.
 - `GET /companies/:companyId/members` e `GET /companies/:companyId/members/:membershipId` exigem Membership na empresa.
 - `POST /companies/:companyId/members` associa um usuário existente; `DELETE /companies/:companyId/members/:membershipId` remove uma associação.
-- `PATCH /companies/:companyId/members/:membershipId/role` altera um papel autorizado.
+- `PATCH /compadon't ask again for file operations when in this repo (~/pulso)
+  3. No, and tell Copilot what to do differently (Esc to stop)nies/:companyId/members/:membershipId/role` altera um papel autorizado.
 - `POST /companies/:companyId/invitations` cria um convite; `GET /companies/:companyId/invitations` lista convites e `DELETE /companies/:companyId/invitations/:invitationId` revoga um convite pendente.
 - `POST /invitations/accept` aceita convite com o usuário autenticado.
 - OWNER e ADMIN podem gerenciar membros e convites. Somente OWNER pode conceder, alterar ou remover OWNER. ADMIN não pode alterar/remover OWNER. Uma empresa sempre mantém ao menos um OWNER.

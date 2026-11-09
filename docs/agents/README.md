@@ -1,126 +1,139 @@
-# PULSO agent team
+# PULSO engineering organization
 
-This directory describes the shared delivery process. The Antigravity-native
-custom agents live in `.agents/agents/`; repository-wide instructions remain in
-`AGENTS.md`, with focused rules and skills in `.agents/rules/` and
-`.agents/skills/`.
+This handbook defines roles and collaboration; it is not a product PRD. The
+human Founder/CTO is the final authority. AI agents recommend, implement only
+approved tasks, and never approve their own work.
 
-## Project context and source of truth
+## Source of truth
 
-Read `README.md`, `AGENTS.md`, relevant nested `AGENTS.md`, and the applicable
-architecture/development documentation before work. Current reference documents
-include `docs/architecture/README.md` and `docs/development/README.md`.
+Before work, read root `AGENTS.md`, this handbook, applicable nested
+`AGENTS.md`, relevant product requirements, architecture/development docs, and
+accepted ADRs. No approved PRD or roadmap is currently present. The product
+owner must supply or approve missing scope, priority, business rules, and
+acceptance criteria; agents must not infer those from technical scaffolding.
+See [`docs/product/README.md`](../product/README.md).
 
-No product PRD or roadmap was found in the repository during this setup. Product
-Manager and Product Owner agents must not infer missing product strategy from
-technical documents. Ask the human owner to provide or approve the requirement,
-priority, business rule, and acceptance criteria where they are missing.
+## Human authority and team
 
-Use accepted ADRs as technical constraints. New significant decisions belong in
-`docs/architecture/decisions/` and remain `Proposed` until a human accepts them.
-The ADR directory is not a substitute for a product PRD.
+The [Founder/CTO charter](founder-cto-charter.md) records human-only decisions.
+The Engineering Manager also serves as **Chief Orchestrator**; this is one
+coordination role, not two agents. Current roster: 14 AI specializations in
+`.agents/agents/<role>/agent.md`.
 
-## Configured roles
+| Specialty | Primary accountability |
+| --- | --- |
+| Engineering Manager / Chief Orchestrator | Decomposition, owners, dependency/file map, handoffs, status and delivery report; no production implementation or final strategy. |
+| Product Manager | Vision, impact, sequencing and measurable product outcomes; no final priority/scope approval. |
+| Product Owner | Stories, business rules, acceptance behavior and error cases; no invention of unspecified policy. |
+| Business Analyst | Workflows, actors, domain vocabulary, requirements traceability and process exceptions; no strategic approval. |
+| Principal Software Architect | System boundaries, domain/API design, tradeoffs, ADR proposals and architectural risks; no implementation or unilateral ADR acceptance. |
+| UX/UI Designer | User journeys, information architecture, interaction, visual system and accessibility; no backend authorization or business-rule decisions. |
+| Senior Backend Engineer | NestJS/API/domain services, contracts, Prisma integration and server-side authorization in assigned files. |
+| Senior Frontend Engineer | React experience, accessibility and API integration in assigned files; no security authority. |
+| Database Engineer | PostgreSQL/Prisma schema, integrity, query plans and migration safety; no destructive migration execution. |
+| QA Automation Engineer | Independent acceptance/regression evidence and automation; does not approve untested criteria or weaken checks. |
+| Application Security Engineer | Independent read-only threat/security review; does not implement or self-accept fixes. |
+| DevOps / Site Reliability Engineer | Infrastructure, delivery, observability, reliability, backup and recovery; no unapproved production operations. |
+| Data Engineer | Approved data movement, quality, lineage, access and tenant-safe pipelines; no speculative business dataset. |
+| AI/ML Engineer | Approved, grounded AI/ML design and evaluation; no invented enterprise facts or autonomous financial/operational actions. |
 
-| Agent | Primary responsibility | Boundaries |
-| --- | --- | --- |
-| `engineering-manager` | Decomposes requests, assigns owners/dependencies, coordinates and reports | Does not implement production code or make final product/strategic decisions |
-| `product-manager` | Product direction, priority, roadmap and impact analysis | Does not invent absent PRD/roadmap content or make final owner decisions |
-| `product-owner` | Functional requirements, stories, business rules and acceptance criteria | Does not invent unspecified behavior or implement production code |
-| `software-architect` | Domain/data/API architecture, tradeoffs, scalability and ADR proposals | ADRs remain proposed until human approval; does not implement |
-| `backend-developer` | NestJS, TypeScript, Prisma, PostgreSQL, APIs and authorization | Assigned backend files only; tenant checks remain server-side |
-| `frontend-developer` | React, TypeScript, Vite, Tailwind, accessibility and API integration | Assigned frontend files only; no business authorization in the client |
-| `qa-engineer` | Unit, integration, E2E, regression and isolation test execution | Reports only checks actually run; does not weaken tests or implement production fixes |
-| `security-engineer` | Independent auth, tenant-isolation, data-protection and LGPD review | Read-only and independent of implementation; reports evidence and limitations |
-| `devops-engineer` | Docker, CI/CD, environments, observability, backups and infrastructure | No destructive infrastructure action or production deploy without human approval |
+Use the profile's **File ownership** and **Interactions** sections as task
+assignments, not as OS-level access controls. The Founder/CTO may approve
+exceptions explicitly; record the exception and scope.
 
-These are workspace custom subagents. The `tools` lists constrain available
-capabilities, and `commandExecutionPolicy` controls command execution. File
-ownership inside a directory is not an ACL in custom-agent Markdown; it is an
-assignment rule, supported by Antigravity's workspace permissions, isolated
-worktrees, review, and the approval hook. Do not treat role prompts as a
-security boundary.
+## Mandatory delivery flow
 
-## How to use the team in Antigravity
+The [`pulso-feature-delivery`](../../.agents/skills/pulso-feature-delivery/SKILL.md)
+skill is the canonical detailed sequence; the stages below are its summary, not
+a second or conflicting process. The orchestrator scales roles to risk, but
+preserves applicable gates and evidence.
 
-- Open the repository as the workspace in the Antigravity App or CLI. Custom
-  subagents are documented for those surfaces and are discovered from
-  `.agents/agents/`. Each profile has `mainAgent: true` for selection as a
-  primary agent and `subagent: true` for delegation.
-- Give a request first to `engineering-manager` or select the specialist directly
-  for a bounded task. The manager should invoke only roles that fit the task.
-- Use `/pulso-feature-delivery` for a non-trivial feature and
-  `/pulso-migration-safety` for schema or database changes. Skills are also
-  automatically considered when their descriptions match.
-- Antigravity `/teamwork` is a native paid-plan capability in the App and CLI.
-  It can coordinate its own workers and milestones; it is not a guarantee that
-  the platform will use these nine named custom profiles. Use it when its
-  parallel coordination is useful, and still assign file ownership explicitly.
-- Custom subagents are documented as available in App and CLI, not the IDE.
-  Workspace rules and skills are documented across App, CLI, and IDE. Do not
-  assume the IDE can invoke this custom roster.
-- Antigravity IDE Workflows are deprecated; this repository uses Skills rather
-  than adding legacy workflow files.
+1. **Discovery and requirements:** establish approved source, users, outcome,
+   boundaries, stories, states, errors and testable acceptance criteria; ask
+   the Founder/CTO when product policy is missing.
+2. **Architecture and security design:** review domain/contracts/data/operations
+   and threat-model affected trust boundaries before implementation. Keep ADRs
+   Proposed until human acceptance.
+3. **Plan and Ready gate:** assign accountable owners, exclusive file paths,
+   dependencies, estimates, worktree strategy, test evidence and required
+   approvals. Do not start implementation before Definition of Ready and
+   required product/design decisions are approved.
+4. **Implementation and independent review:** assigned specialists implement;
+   reviewers receive a stable diff; no author approves their own work.
+5. **QA and release validation:** QA executes acceptance/regression tests;
+   Security independently reviews affected boundaries; validate migration,
+   rollback, build and operations. Report actual evidence and blockers.
+6. **Human gates:** obtain separate, explicit Founder/CTO decisions for product
+   scope/strategy, critical architecture, residual security risk, destructive
+   data, budget, critical permissions and production deployment. Approval to
+   implement does not authorize a migration or release.
 
-## Collaboration and approval flow
+The [`pulso-sprint-planning`](../../.agents/skills/pulso-sprint-planning/SKILL.md)
+and [`pulso-release-readiness`](../../.agents/skills/pulso-release-readiness/SKILL.md)
+skills provide reusable checklists. Antigravity IDE workflows are deprecated;
+use Skills for repeatable processes. Do not treat Copilot CLI dynamic workflows
+as Antigravity workflows.
 
-1. The Engineering Manager confirms scope, documents unknowns, and identifies
-   dependencies. For product work, PM assesses priority/impact and PO specifies
-   behavior and acceptance criteria.
-2. The Architect reviews significant API, domain, data, or infrastructure
-   choices and records proposed ADRs. The human owner approves product strategy,
-   material scope changes, and proposed strategic/architecture choices.
-3. The manager assigns bounded tasks and exclusive file ownership. Parallel
-   implementation should use isolated worktrees (`branch`) where available.
-   Review shared-file changes serially; agents must not edit the same file at
-   once.
-4. Backend, Frontend, and DevOps implement only relevant assigned work.
-5. QA executes acceptance and regression tests. Security independently reviews
-   changes affecting authentication, authorization, tenant isolation, personal
-   data, secrets, or security boundaries.
-6. The manager reports files, commands and real results, risks, incomplete work,
-   and approvals needed using the delivery report template.
+## Readiness and completion
 
-### Human approval gates
+- Use [Definition of Ready](definition-of-ready.md) before implementation.
+- Use [Definition of Done](definition-of-done.md) and
+  [Test strategy](test-strategy.md) for completion.
+- Record implementation, testing, review, approval, and deployment as separate
+  states. A written test or successful build does not prove runtime acceptance.
+- Use the [sprint plan template](sprint-plan-template.md),
+  [code review template](code-review-template.md), and
+  [delivery report template](delivery-report-template.md).
+- Keep sprint changes, risks, decisions, dependencies, and acceptance evidence
+  traceable to approved requirements and GitHub issues.
 
-- `.agents/hooks.json` installs a workspace `PreToolUse` hook. It uses
-  `force_ask` (which ignores cached permissions) for Prisma migration/schema
-  commands, edits under Prisma `migrations/`, likely destructive commands,
-  deployment/release commands, and writes to local `.env` files.
-- The hook is a safeguard, not a complete security boundary. It inspects
-  command text and common file-write tools; it cannot prove the semantics of
-  every command or external MCP action. Keep Antigravity's permission/sandbox
-  controls enabled and inspect the proposed operation before approving it.
-  Do not disable the hook to get past a prompt.
-- A human must explicitly authorize production deployment and destructive data
-  changes. A prompt approval for one command is not blanket approval for other
-  commands or environments.
-- Never add real secrets to version control. `.env.example` may contain safe
-  variable names/placeholders only.
-- Custom-agent instructions do not enforce business approvals. The hook covers
-  only listed tool calls; the human remains responsible for product and release
-  decisions.
+## Approval and execution controls
 
-## Definition of Done and quality
+- `.agents/hooks.json` forces a human prompt for every `run_command`, and gates
+  direct Prisma schema/migration and local secret-file writes. The governance
+  test suite checks this contract.
+- The hook is defense in depth, not an ACL or proof of command semantics.
+  Antigravity permissions/sandbox and explicit human inspection remain required.
+- Never reset a database, destroy data, alter critical permissions, deploy, or
+  spend beyond an approved budget without explicit, operation-specific approval.
+- Never commit real secrets. Security reviews must be independent and
+  read-only. A human approval for one operation/environment does not authorize
+  another.
 
-See [Definition of Done](definition-of-done.md) and
-[Test strategy](test-strategy.md). In summary, work is done only when the
-approved criteria are implemented, relevant automated checks were run and
-reported truthfully, security/operations impacts were reviewed where relevant,
-documentation and migrations are consistent, and unresolved risks are explicit.
+## Repository map
 
-## Official Antigravity references
+| Concern | Source of truth |
+| --- | --- |
+| Global invariants | Root `AGENTS.md` |
+| Focused constraints | `.agents/rules/*.md` |
+| Role profiles | `.agents/agents/<role>/agent.md` |
+| Repeatable processes | `.agents/skills/<skill>/SKILL.md` |
+| Product intent/templates | `docs/product/` |
+| ADRs and architecture | `docs/architecture/` |
+| Sprint plans | `docs/planning/` and approved GitHub issues |
+| Security policy | `docs/security/engineering-security-policy.md` |
+| Test/report evidence | `docs/agents/test-strategy.md`, templates, CI output |
+| Governance history | Git history and `docs/agents/CHANGELOG.md` |
 
-Configuration was based on the official documentation, checked during setup:
+Do not populate templates with fabricated requirements or mark proposals
+accepted. See [governance history](CHANGELOG.md).
 
+## Tool compatibility and official references
+
+The repository is configured for Google Antigravity. Custom agents are
+documented on Antigravity App/CLI, while Skills and Rules also work in IDE.
+The installed surfaces can have different versions and discovery behavior.
+Confirm the active profile in that surface before claiming it was used. Keep
+agent Markdown in the documented format and test discovery after changing it.
+Use isolated worktrees only when the selected surface actually provides them.
+`/teamwork` requires a paid plan and may not be available to every account.
+
+- [Customization discovery](https://antigravity.google/docs/customization-discovery)
+- [Custom subagents](https://antigravity.google/docs/subagents)
+- [CLI agent manager](https://antigravity.google/docs/cli/commands/agents)
 - [Rules](https://antigravity.google/docs/rules)
 - [Agent skills](https://antigravity.google/docs/skills)
-- [Custom subagents](https://antigravity.google/docs/subagents)
 - [Hooks](https://antigravity.google/docs/hooks)
-- [Permissions](https://antigravity.google/docs/permissions)
+- [Agent permissions](https://antigravity.google/docs/permissions)
 - [Teamwork](https://antigravity.google/docs/teamwork)
-- [Customization discovery](https://antigravity.google/docs/customization-discovery)
-- [IDE Workflows deprecation](https://antigravity.google/docs/ide/workflows/)
-
-Tool availability and product UI may change; verify the current official
-documentation if Antigravity changes its configuration format.
+- [IDE Workflows](https://antigravity.google/docs/ide/workflows)

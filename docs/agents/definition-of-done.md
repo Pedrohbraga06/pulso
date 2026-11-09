@@ -1,27 +1,54 @@
 # Definition of Done
 
-A task is complete only when all applicable items are satisfied:
+Use with [Definition of Ready](definition-of-ready.md). "Done" is evaluated
+against the approved scope and acceptance criteria, not against activity or
+files written.
 
-- The human-approved request and acceptance criteria are clear. Unspecified
-  product or business behavior is resolved with the owner, not guessed.
-- Changes stay within assigned scope and workspace boundaries. Concurrent agents
-  had non-overlapping file ownership.
-- Implementation follows `AGENTS.md`, accepted ADRs, tenant-isolation
-  requirements, and existing project conventions.
-- Tests cover meaningful behavior and relevant failure/authorization cases.
-  Every reported passing check was actually executed; exact commands and results
-  appear in the report.
-- Applicable typecheck, lint, test, build, and migration/schema checks passed.
-  Blocked or skipped checks are called out with reasons.
-- Security review was independently performed when authentication,
-  authorization, tenant isolation, personal data, secrets, or security
-  boundaries changed.
-- Infrastructure impacts were validated when relevant; no production deployment
-  or destructive operation occurred without explicit human authorization.
-- Documentation and versioned migration history reflect the change. No real
-  secrets or `.env` files were added to version control.
-- The final report lists changed files, validation evidence, unresolved risks,
-  limitations, and required human decisions.
+## Required gates
 
-Do not label a task complete when a criterion is blocked, a relevant check has
-not run, or a required approval is pending.
+- Scope, source requirements, acceptance criteria and applicable human approvals
+  are explicit. No unresolved P0/P1 issue or unapproved business/architecture
+  assumption remains.
+- Each task has a named owner and scope. Parallel edits had exclusive file
+  ownership or used separate worktrees and were reconciled.
+- Code follows root/nested `AGENTS.md`, accepted ADRs, workspace boundaries,
+  tenant isolation and repository conventions.
+- Inputs are validated at trust boundaries; errors are explicit and consistent;
+  logs do not disclose secrets or sensitive data; backend rules and permissions
+  remain authoritative.
+- Data integrity, transaction boundaries, precision, migration safety,
+  dependency impact and operational effects are reviewed where relevant.
+- Tests cover acceptance behavior, negative cases and regressions. Security
+  review is independent/read-only when auth, permissions, tenant isolation,
+  personal data, secrets, AI/data access or security controls are affected.
+- Documentation, contracts and migration history are updated. No real secrets
+  or `.env` files are versioned.
+
+## Required evidence
+
+Run and report every applicable check, with exact command, actual result and
+environment prerequisites:
+
+- Typecheck.
+- Lint.
+- Build.
+- Focused unit/integration/E2E/frontend tests.
+- Migration/schema validation without unapproved database mutation.
+- Security/operational review and release checks when applicable.
+
+A test file, mock-only check, build, static review, or skipped test does not
+prove runtime behavior. Record failures, skips and blocked criteria explicitly;
+never weaken tests, TypeScript, lint or security controls to obtain a pass.
+
+## Completion states
+
+Track separately in the delivery report:
+
+1. **Implemented** — approved change exists in the assigned files.
+2. **Tested** — relevant checks ran and evidence is recorded.
+3. **Reviewed** — independent review is complete or explicitly not applicable.
+4. **Approved** — human approval gates are satisfied.
+5. **Deployed** — deployment was explicitly authorized and observed.
+
+Do not label a task or sprint complete while a required state is pending, a
+criterion is unverified, or a P0/P1 risk remains open.
