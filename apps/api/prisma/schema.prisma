@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum CompanyRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model HealthCheck {
+  id        String   @id @default(cuid())
+  checkedAt DateTime @default(now())
+}
+
+model User {
+  id              String              @id @default(uuid())
+  email           String              @unique
+  name            String
+  passwordHash    String
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  memberships     Membership[]
+  sentInvitations CompanyInvitation[] @relation("InvitationCreator")
+}
+
+model Company {
+  id          String              @id @default(uuid())
+  name        String
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  memberships Membership[]
+  invitations CompanyInvitation[]
+}
+
+model Membership {
+  id        String      @id @default(uuid())
+  userId    String
+  companyId String
+  role      CompanyRole @default(MEMBER)
+  createdAt DateTime    @default(now())
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company   Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, companyId])
+  @@index([companyId])
+}
+
+model CompanyInvitation {
+  id              String      @id @default(uuid())
+  companyId       String
+  createdByUserId String
+  email           String?
+  role            CompanyRole @default(MEMBER)
+  tokenHash       String      @unique
+  expiresAt       DateTime
+  revokedAt       DateTime?
+  acceptedAt      DateTime?
+  createdAt       DateTime    @default(now())
+  company         Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy       User        @relation("InvitationCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  @@index([companyId, createdAt])
+}
