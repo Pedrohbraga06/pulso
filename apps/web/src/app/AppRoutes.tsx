@@ -9,12 +9,12 @@ import {
   IngredientsPage,
   ProductsPage,
 } from '../features/catalog/CatalogPages';
+import { RecipesPage } from '../features/operations/OperationsPages';
 import {
   AlertsPage,
   InventoryPage,
   MovementsPage,
-  RecipesPage,
-} from '../features/operations/OperationsPages';
+} from '../features/operations/InventoryPages';
 import {
   AcceptInvitationPage,
   CompanyPage,

@@ -5,8 +5,9 @@ workspace and a responsive dark visual system.
 
 ## Development
 
-Run the API and web app from the repository root with `pnpm dev`, or start only
-the frontend with `pnpm --filter web dev`. The default API URL is
+Run the API and web app in separate terminals using the commands in the
+[development guide](../../docs/development/README.md), or start only the
+frontend with `pnpm --filter web dev`. The default API URL is
 `http://localhost:3001`. To override it, copy `.env.example` to `.env.local` and
 set `VITE_API_BASE_URL`.
 

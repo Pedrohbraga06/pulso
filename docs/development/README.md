@@ -1,141 +1,130 @@
 # Desenvolvimento
 
-## Requisitos locais
+## Requisitos
 
 - Node.js >= 22
 - pnpm >= 11
-- Docker + Docker Compose
+- Docker e Docker Compose
 - Git
 
-## Instalação
+## Preparar o ambiente local
 
 ```bash
 cp apps/api/.env.example apps/api/.env
-pnpm install
 openssl rand -hex 32
 ```
 
-Set the generated value as `JWT_SECRET` in `apps/api/.env`. Keep it private and
-use a different value in each deployed environment.
+Defina o valor gerado como `JWT_SECRET` em `apps/api/.env`. Os demais valores
+do arquivo de exemplo são destinados ao desenvolvimento local. Se alterar as
+credenciais do PostgreSQL ou Redis, mantenha as URLs correspondentes
+(`DATABASE_URL` e `REDIS_URL`) consistentes. Não versione arquivos `.env`.
 
-## Infraestrutura local
+Instale as dependências e inicie PostgreSQL e Redis:
 
 ```bash
+pnpm install --frozen-lockfile
 docker compose --env-file apps/api/.env -f infrastructure/docker/docker-compose.yml up -d --wait
 ```
-
-### Serviços locais
 
 - PostgreSQL: `localhost:5433`
 - Redis: `localhost:6380`
 
-## Execução
+A API usa PostgreSQL. Redis está disponível na infraestrutura local, mas não é
+necessário para os fluxos atualmente implementados.
 
-### API
+## Banco de dados
 
-```bash
-pnpm --dir apps/api run start:dev
-```
-
-A API estará disponível em:
-
-- `http://localhost:3001`
-- `http://localhost:3001/docs` (Swagger)
-- `http://localhost:3001/health` (health check)
-
-### Identidade e autenticação
-
-- `POST /auth/register` cria o usuário e a primeira empresa atomicamente; o usuário recebe a associação `OWNER`.
-- `POST /auth/login` autentica por e-mail e senha.
-- `GET /auth/me` exige `Authorization: Bearer <access-token>` e retorna apenas o perfil autenticado e suas associações.
-- Senhas são armazenadas com Argon2id; access tokens JWT expiram em 15 minutos.
-- O JWT contém a identidade do usuário, não um `tenantId` escolhido pelo cliente. Campos não permitidos no cadastro são rejeitados.
-
-O cadastro exige `name`, `email`, `password` (mínimo de 12 caracteres) e `companyName`.
-
-### Identidade e autenticação
-
-- `POST /auth/register` cria o usuário e a primeira empresa atomicamente; o usuário recebe a associação `OWNER`.
-- `POST /auth/login` autentica por e-mail e senha.
-- `GET /auth/me` exige `Authorization: Bearer <access-token>` e retorna apenas o perfil autenticado e suas associações.
-- Senhas são armazenadas com Argon2id; access tokens JWT expiram em 15 minutos.
-- O JWT contém a identidade do usuário, não um `tenantId` escolhido pelo cliente. Campos não permitidos no cadastro são rejeitados.
-
-### Identidade e autenticação
-
-- `POST /auth/register` cria o usuário e a primeira empresa atomicamente; o usuário recebe a associação `OWNER`.
-- `POST /auth/login` autentica por e-mail e senha.
-- `GET /auth/me` exige `Authorization: Bearer <access-token>` e retorna apenas o perfil autenticado e suas associações.
-- Senhas são armazenadas com Argon2id; access tokens JWT expiram em 15 minutos.
-- O JWT contém a identidade do usuário, não um `tenantId` escolhido pelo cliente. Campos não permitidos no cadastro são rejeitados.
-
-O cadastro exige `name`, `email`, `password` (mínimo de 12 caracteres) e `companyName`.
-
-### Empresas, 
-O cadastro exige `name`, `email`, `password` (mínimo de 12 caracteres) e `companyName`.
-
-### Empresas, 
-### Empresas, Memberships e convites
-
-- `GET /companies` lista as empresas associadas ao usuário autenticado.
-- `GET /companies/:companyId/members` e `GET /companies/:companyId/members/:membershipId` exigem Membership na empresa.
-- `POST /companies/:companyId/members` associa um usuário existente; `DELETE /companies/:companyId/members/:membershipId` remove uma associação.
-- `PATCH /compadon't ask again for file operations when in this repo (~/pulso)
-  3. No, and tell Copilot what to do differently (Esc to stop)nies/:companyId/members/:membershipId/role` altera um papel autorizado.
-- `POST /companies/:companyId/invitations` cria um convite; `GET /companies/:companyId/invitations` lista convites e `DELETE /companies/:companyId/invitations/:invitationId` revoga um convite pendente.
-- `POST /invitations/accept` aceita convite com o usuário autenticado.
-- OWNER e ADMIN podem gerenciar membros e convites. Somente OWNER pode conceder, alterar ou remover OWNER. ADMIN não pode alterar/remover OWNER. Uma empresa sempre mantém ao menos um OWNER.
-- Convites duram 7 dias. O token aleatório é retornado uma única vez na criação; apenas seu hash SHA-256 é armazenado. Se o convite tiver e-mail associado, ele deve corresponder ao e-mail do usuário autenticado.
-- Não há envio de e-mail nesta etapa. O contrato `InvitationDeliveryPort` isola a futura integração; por enquanto, o responsável pelo convite deve entregar o token por um canal externo seguro.
-- Rotas de empresa resolvem o usuário pelo JWT e verificam a Membership persistida em cada requisição; o `companyId` da URL não concede acesso.
-
-Os endpoints de membros e convites exigem access token. A listagem de membros é permitida a qualquer membro da empresa; alterações e gestão de convites exigem OWNER ou ADMIN.
-
-### Web
-
-```bash
-pnpm --dir apps/web run dev
-```
-
-## Prisma
+Gere o cliente Prisma e aplique as migrations no banco local:
 
 ```bash
 pnpm --filter api db:generate
 pnpm --filter api db:migrate
 ```
 
-`db:migrate` cria migrations versionadas durante o desenvolvimento. Para aplicar
-migrations já versionadas em outro ambiente, use `pnpm --filter api db:deploy`.
-Não use `prisma db push --accept-data-loss` em bancos com dados.
+Use `pnpm --filter api db:status` para conferir o estado. `db:deploy` aplica
+migrations já versionadas em outros ambientes; `db:migrate` é destinado ao
+desenvolvimento. Não use `prisma db push --accept-data-loss` nem redefina um
+banco com dados para sincronizar o schema.
 
-A migration `20261106180600_company_invitations` adiciona a tabela de convites,
-sem recriar `User`, `Company` ou `Membership`. Confirme o estado antes e depois
-com `pnpm --filter api db:status`; nunca use reset para sincronizar o banco.
-
-Se o banco local já tiver o schema inicial aplicado por `db push`, confirme que
-ele corresponde a `prisma/migrations/20261106170000_init/migration.sql` antes de
-marcá-lo como baseline:
+Se um banco local já tiver o schema inicial criado por `db push`, só marque a
+migration inicial como aplicada depois de verificar que o schema corresponde a
+`apps/api/prisma/migrations/20261106170000_init/migration.sql`:
 
 ```bash
 pnpm --filter api exec prisma migrate resolve --applied 20261106170000_init
 ```
 
-Esse baseline registra a migration sem recriar tabelas nem apagar dados. Não o
-execute em um banco cujo schema não tenha sido verificado.
+Esse comando registra um baseline; não recria tabelas. Não o execute sem
+verificar o schema existente.
 
-## Validação
+## Executar
+
+Inicie API e web em terminais separados:
 
 ```bash
-pnpm install --frozen-lockfile
+pnpm --filter api start:dev
+pnpm --filter web dev
+```
+
+- Web: `http://localhost:5173`
+- API: `http://localhost:3001`
+- Swagger: `http://localhost:3001/docs`
+- Health check da API e conexão com o banco: `http://localhost:3001/health`
+
+## Funcionalidades atualmente implementadas
+
+### Autenticação
+
+- `POST /auth/register` cria usuário, empresa e associação `OWNER`.
+- `POST /auth/login` autentica com e-mail e senha.
+- `GET /auth/me` exige `Authorization: Bearer <access-token>` e retorna o
+  perfil autenticado e suas associações.
+- As senhas são armazenadas com Argon2id; o access token JWT expira em 15
+  minutos.
+- O cadastro exige `name`, `email`, `password` (mínimo de 12 caracteres) e
+  `companyName`. Campos não permitidos, incluindo identificador de tenant,
+  são rejeitados.
+
+### Empresas, membros e convites
+
+- `GET /companies` lista as empresas associadas ao usuário autenticado.
+- Rotas `/companies/:companyId/members` permitem consultar e gerenciar membros;
+  membros e papéis são verificados pela associação persistida no servidor.
+- Rotas `/companies/:companyId/invitations` permitem criar, listar e revogar
+  convites. `POST /invitations/accept` aceita um convite com usuário
+  autenticado.
+- `OWNER` e `ADMIN` podem gerenciar membros e convites, com restrições para
+  proteger o papel `OWNER`; a empresa deve manter pelo menos um `OWNER`.
+- O token de convite é exibido apenas na criação e seu hash SHA-256 é
+  armazenado. Convites expiram em sete dias; não há envio de e-mail integrado.
+
+### Frontend
+
+O frontend integra autenticação, perfil, empresas, membros e convites com a
+API. As páginas de catálogo, receitas, estoque, movimentos e alertas usam
+dados de demonstração em memória: não são persistidas e não representam regras
+de produto aprovadas. O token de acesso fica em memória; após recarregar a
+página, é necessário autenticar novamente.
+
+## Verificações
+
+```bash
+pnpm lint
 pnpm typecheck
 pnpm test
 pnpm test:e2e
 pnpm build
-pnpm lint
+pnpm test:governance
 ```
 
-## Observações de segurança
+Os testes E2E da API requerem uma instância PostgreSQL acessível com o schema
+atualizado. Consulte os scripts da raiz e de cada workspace para executar
+verificações isoladas.
 
-- `.env` e arquivos sensíveis devem ficar localmente e nunca versionados.
-- A API deve validar o tenant autenticado e não aceitar `tenant_id` arbitrário do cliente.
-- As consultas e cálculos financeiros devem acontecer no backend.
+## Segurança
+
+- Não versione credenciais, tokens ou arquivos `.env`.
+- A API deriva a identidade do usuário do JWT e verifica a associação com a
+  empresa; um `companyId` fornecido pelo cliente não concede acesso.
+- Mantenha autorização e cálculos operacionais no backend. O frontend não é
+  uma fronteira de segurança.

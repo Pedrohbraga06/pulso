@@ -68,24 +68,23 @@ function InventoryBars() {
 }
 
 export function DashboardPage() {
-  const [period, setPeriod] = useState('7 dias');
+  const [today] = useState(() => new Intl.DateTimeFormat('pt-BR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  }).format(new Date()));
   return (
     <>
       <DemoBanner />
       <PageHeader
         description="Acompanhe os sinais mais importantes da sua operação."
-        eyebrow="SEGUNDA-FEIRA, 16 DE JUNHO"
+        eyebrow={today}
         title="O pulso da sua operação"
         action={
-          <label className="period-select">
+          <span aria-label="Período demonstrativo: últimos 7 dias" className="period-select">
             <Icon name="calendar" size={16} />
-            <select aria-label="Período demonstrativo" onChange={(event) => setPeriod(event.target.value)} value={period}>
-              <option>7 dias</option>
-              <option>30 dias</option>
-              <option>90 dias</option>
-            </select>
-            <Icon name="chevron" size={14} />
-          </label>
+            <span>Últimos 7 dias</span>
+          </span>
         }
       />
       <section className="stats-grid" aria-label="Indicadores demonstrativos">

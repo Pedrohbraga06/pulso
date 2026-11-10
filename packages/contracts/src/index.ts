@@ -75,3 +75,64 @@ export interface AcceptedCompanyInvitation {
   companyName: string;
   role: CompanyRole;
 }
+
+export type InventoryMovementType = "ENTRY" | "EXIT" | "ADJUSTMENT";
+
+export type InventoryItemStatus =
+  | "HEALTHY"
+  | "AT_MINIMUM"
+  | "BELOW_MINIMUM";
+
+export interface InventoryItemResponse {
+  id: string;
+  companyId: string;
+  name: string;
+  unit: string;
+  quantityOnHand: string;
+  minimumQuantity: string;
+  status: InventoryItemStatus;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InventoryMovementResponse {
+  id: string;
+  itemId: string;
+  itemName: string;
+  unit: string;
+  actorUserId: string;
+  actorName: string;
+  type: InventoryMovementType;
+  quantity: string;
+  countedQuantity: string | null;
+  delta: string;
+  beforeQuantity: string;
+  afterQuantity: string;
+  reason: string;
+  createdAt: string;
+}
+
+export interface CreateInventoryItemInput {
+  name: string;
+  unit: string;
+  minimumQuantity: string;
+}
+
+export interface UpdateInventoryItemInput {
+  name?: string;
+  minimumQuantity?: string;
+  isActive?: boolean;
+}
+
+export type CreateInventoryMovementInput =
+  | {
+      type: "ENTRY" | "EXIT";
+      quantity: string;
+      reason: string;
+    }
+  | {
+      type: "ADJUSTMENT";
+      countedQuantity: string;
+      reason: string;
+    };

@@ -53,7 +53,7 @@ PULSO is a business intelligence and operations platform for multi-tenant compan
    ```bash
    pnpm --dir apps/web run dev
    ```
-5. Open the Swagger docs:
+7. Open the Swagger docs:
    - `http://localhost:3001/docs`
 
 ## Key ports
@@ -72,4 +72,7 @@ PULSO is a business intelligence and operations platform for multi-tenant compan
 
 ## Status
 
-This repository is in Sprint 0, with the technical foundation and local developer environment in place.
+The technical foundation and the first identity/company-administration flows are
+implemented. The operational layer (catalog, recipes, inventory and alerts) is
+still a proposal in `docs/planning/sprint-2-operational-layer.md`; its screens
+currently use demo data and its product scope has not been approved.

@@ -13,6 +13,12 @@ enum CompanyRole {
   MEMBER
 }
 
+enum InventoryMovementType {
+  ENTRY
+  EXIT
+  ADJUSTMENT
+}
+
 model HealthCheck {
   id        String   @id @default(cuid())
   checkedAt DateTime @default(now())
@@ -27,6 +33,7 @@ model User {
   updatedAt       DateTime            @updatedAt
   memberships     Membership[]
   sentInvitations CompanyInvitation[] @relation("InvitationCreator")
+  inventoryMovements InventoryMovement[]
 }
 
 model Company {
@@ -36,6 +43,7 @@ model Company {
   updatedAt   DateTime            @updatedAt
   memberships Membership[]
   invitations CompanyInvitation[]
+  inventoryItems InventoryItem[]
 }
 
 model Membership {
@@ -66,4 +74,38 @@ model CompanyInvitation {
   createdBy       User        @relation("InvitationCreator", fields: [createdByUserId], references: [id], onDelete: Restrict)
 
   @@index([companyId, createdAt])
+}
+
+model InventoryItem {
+  id              String              @id @default(uuid())
+  companyId       String
+  name            String
+  unit            String
+  quantityOnHand  Decimal             @default(0) @db.Decimal(14, 3)
+  minimumQuantity Decimal             @db.Decimal(14, 3)
+  isActive        Boolean             @default(true)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  company         Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  movements       InventoryMovement[]
+
+  @@index([companyId, isActive, name])
+}
+
+model InventoryMovement {
+  id              String                @id @default(uuid())
+  itemId          String
+  actorUserId     String
+  type            InventoryMovementType
+  quantity        Decimal               @db.Decimal(14, 3)
+  countedQuantity Decimal?              @db.Decimal(14, 3)
+  delta           Decimal               @db.Decimal(14, 3)
+  beforeQuantity  Decimal               @db.Decimal(14, 3)
+  afterQuantity   Decimal               @db.Decimal(14, 3)
+  reason          String
+  createdAt       DateTime              @default(now())
+  item            InventoryItem         @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  actor           User                  @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  @@index([itemId, createdAt])
 }

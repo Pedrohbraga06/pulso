@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../app/useAuth';
 import { Icon, type IconName } from '../components/Icon';
@@ -45,9 +45,48 @@ export function AppShell() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const sidebar = useRef<HTMLElement>(null);
+  const mobileMenuButton = useRef<HTMLButtonElement>(null);
+  const mobileCloseButton = useRef<HTMLButtonElement>(null);
+  const wasMobileOpen = useRef(false);
   const location = useLocation();
   const title = routeTitles.get(location.pathname) ?? 'PULSO';
   const activeMembership = memberships.find((item) => item.companyId === activeCompanyId);
+
+  useEffect(() => {
+    if (!mobileOpen) {
+      if (wasMobileOpen.current) mobileMenuButton.current?.focus();
+      wasMobileOpen.current = false;
+      return;
+    }
+
+    wasMobileOpen.current = true;
+    mobileCloseButton.current?.focus();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMobileOpen(false);
+      if (event.key !== 'Tab') return;
+
+      const focusable = sidebar.current?.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), select:not([disabled]), input:not([disabled])',
+      );
+      if (!focusable?.length) {
+        event.preventDefault();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && (document.activeElement === first || !sidebar.current?.contains(document.activeElement))) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !sidebar.current?.contains(document.activeElement))) {
+        event.preventDefault();
+        first?.focus();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [mobileOpen]);
 
   function closeMobile() {
     setMobileOpen(false);
@@ -55,14 +94,21 @@ export function AppShell() {
 
   return (
     <div className={`app-shell${collapsed ? ' app-shell--collapsed' : ''}${mobileOpen ? ' app-shell--mobile-open' : ''}`}>
-      {mobileOpen && <button className="mobile-backdrop" aria-label="Fechar menu" onClick={closeMobile} type="button" />}
-      <aside className="sidebar">
+      {mobileOpen && <button className="mobile-backdrop" aria-label="Fechar menu de navegação" onClick={closeMobile} type="button" />}
+      <aside
+        aria-label="Navegação da aplicação"
+        aria-modal={mobileOpen || undefined}
+        className="sidebar"
+        id="primary-navigation"
+        ref={sidebar}
+        role={mobileOpen ? 'dialog' : undefined}
+      >
         <div className="sidebar__brand">
           <Link aria-label="PULSO — visão geral" to="/app/overview" onClick={closeMobile}><Brand compact={collapsed} /></Link>
           <button className="sidebar__collapse icon-button" aria-label={collapsed ? 'Expandir navegação' : 'Recolher navegação'} onClick={() => setCollapsed((value) => !value)} type="button">
             <Icon name="menu" size={18} />
           </button>
-          <button className="sidebar__mobile-close icon-button" aria-label="Fechar menu" onClick={closeMobile} type="button"><Icon name="close" /></button>
+          <button ref={mobileCloseButton} className="sidebar__mobile-close icon-button" aria-label="Fechar menu" onClick={closeMobile} type="button"><Icon name="close" /></button>
         </div>
         <nav className="sidebar__nav" aria-label="Navegação principal">
           <p className="sidebar__label">WORKSPACE</p>
@@ -78,13 +124,13 @@ export function AppShell() {
             <NavItem key={item.to} {...item} onClick={closeMobile} />
           ))}
           <p className="sidebar__label">ADMINISTRAÇÃO</p>
-          <NavLink className={({ isActive }) => `nav-item${isActive ? ' nav-item--active' : ''}`} onClick={closeMobile} to="/app/users">
+          <NavLink aria-label="Usuários e permissões" className={({ isActive }) => `nav-item${isActive ? ' nav-item--active' : ''}`} onClick={closeMobile} title="Usuários e permissões" to="/app/users">
             <Icon name="users" size={18} /><span>Usuários e permissões</span>
           </NavLink>
-          <NavLink className={({ isActive }) => `nav-item${isActive ? ' nav-item--active' : ''}`} onClick={closeMobile} to="/app/company">
+          <NavLink aria-label="Empresa" className={({ isActive }) => `nav-item${isActive ? ' nav-item--active' : ''}`} onClick={closeMobile} title="Empresa" to="/app/company">
             <Icon name="building" size={18} /><span>Empresa</span>
           </NavLink>
-          <NavLink className={({ isActive }) => `nav-item${isActive ? ' nav-item--active' : ''}`} onClick={closeMobile} to="/app/settings">
+          <NavLink aria-label="Configurações" className={({ isActive }) => `nav-item${isActive ? ' nav-item--active' : ''}`} onClick={closeMobile} title="Configurações" to="/app/settings">
             <Icon name="settings" size={18} /><span>Configurações</span>
           </NavLink>
         </nav>
@@ -101,10 +147,20 @@ export function AppShell() {
         </div>
       </aside>
 
-      <main className="main-area">
+      <main aria-hidden={mobileOpen} className="main-area" inert={mobileOpen}>
         <header className="topbar">
           <div className="topbar__left">
-            <button className="mobile-menu icon-button" aria-label="Abrir menu" onClick={() => setMobileOpen(true)} type="button"><Icon name="menu" /></button>
+            <button
+              ref={mobileMenuButton}
+              aria-controls="primary-navigation"
+              aria-expanded={mobileOpen}
+              className="mobile-menu icon-button"
+              aria-label="Abrir menu"
+              onClick={() => setMobileOpen(true)}
+              type="button"
+            >
+              <Icon name="menu" />
+            </button>
             <div className="breadcrumbs"><span>Workspace</span><Icon name="chevron" size={13} /><strong>{title}</strong></div>
           </div>
           <div className="topbar__actions">
@@ -150,7 +206,7 @@ function NavItem({
   onClick(): void;
 }) {
   return (
-    <NavLink className={({ isActive }) => `nav-item${isActive ? ' nav-item--active' : ''}`} onClick={onClick} to={to}>
+    <NavLink aria-label={label} className={({ isActive }) => `nav-item${isActive ? ' nav-item--active' : ''}`} onClick={onClick} title={label} to={to}>
       <Icon name={icon} size={18} /><span>{label}</span>
     </NavLink>
   );

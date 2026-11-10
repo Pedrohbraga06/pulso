@@ -258,7 +258,7 @@ export function UsersPage() {
         <>
           <Panel className="catalog-panel" title="Membros" subtitle={`${members.length} vínculo(s) retornado(s) pela API`}>
             {members.length === 0 ? <EmptyState description="A lista usa GET /companies/:companyId/members." icon="users" title="Nenhum membro encontrado" /> : (
-              <div className="table-scroll"><table className="data-table"><thead><tr><th>Pessoa</th><th>Papel</th><th>Vínculo desde</th>{canManage && <th>Ações</th>}</tr></thead><tbody>
+              <div aria-label="Tabela de membros da empresa" className="table-scroll" role="region" tabIndex={0}><table className="data-table"><thead><tr><th>Pessoa</th><th>Papel</th><th>Vínculo desde</th>{canManage && <th>Ações</th>}</tr></thead><tbody>
                 {members.map((member) => {
                   const isSelf = member.userId === session?.user.id;
                   const canEdit = canManage && !(activeRole === 'ADMIN' && member.role === 'OWNER');

@@ -8,6 +8,7 @@ import { PrismaHealthIndicator } from '@nestjs/terminus';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { CompaniesModule } from './companies/companies.module.js';
+import { InventoryModule } from './inventory/inventory.module.js';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { CompaniesModule } from './companies/companies.module.js';
     PrismaModule,
     AuthModule,
     CompaniesModule,
+    InventoryModule,
   ],
   controllers: [AppController],
   providers: [
